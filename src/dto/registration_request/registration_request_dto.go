@@ -1,10 +1,10 @@
 package registration_request
 
 import (
-	"github.com/Nistagram-Organization/agent-shared/src/utils/rest_error"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/gender"
 	"github.com/Nistagram-Organization/nistagram-shared/src/model/user"
 	"github.com/Nistagram-Organization/nistagram-shared/src/proto"
+	"github.com/Nistagram-Organization/nistagram-shared/src/utils/rest_error"
 	"net/mail"
 	"net/url"
 	"strings"

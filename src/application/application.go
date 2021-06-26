@@ -3,7 +3,7 @@ package application
 import (
 	"fmt"
 	auth02 "github.com/Nistagram-Organization/nistagram-auth/src/clients/auth0"
-	"github.com/Nistagram-Organization/nistagram-auth/src/clients/auth_grpc_client"
+	"github.com/Nistagram-Organization/nistagram-auth/src/clients/user_grpc_client"
 	"github.com/Nistagram-Organization/nistagram-auth/src/controllers/auth"
 	auth2 "github.com/Nistagram-Organization/nistagram-auth/src/services/auth"
 	"github.com/gin-contrib/cors"
@@ -40,7 +40,7 @@ func StartApplication() {
 	authController := auth.NewAuthController(
 		auth2.NewAuthService(
 			auth02.NewAuth0Client(domain, clientId, clientSecret, audience),
-			auth_grpc_client.NewAuthGrpcClient(),
+			user_grpc_client.NewUserGrpcClient(),
 		),
 	)
 

@@ -3,11 +3,16 @@ package auth0
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/go-resty/resty/v2"
 	"net/http"
 	"net/url"
 	"strings"
+)
+
+const (
+	USER_ROLE_ID  = "rol_pi1paAm945Clo77K"
+	AGENT_ROLE_ID = "rol_CkudJNyTZ7IERarY"
 )
 
 type Auth0Client interface {
@@ -21,8 +26,9 @@ type ApiTokenResponse struct {
 }
 
 type UserRegistrationRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	Connection string `json:"connection"`
 }
 
 type UserRegistrationResponse struct {
@@ -34,7 +40,6 @@ type SetUserRolesRequest struct {
 }
 
 type auth0Client struct {
-	restyClient  *resty.Client
 	domain       string
 	clientId     string
 	clientSecret string
@@ -43,7 +48,6 @@ type auth0Client struct {
 
 func NewAuth0Client(domain string, clientId string, clientSecret string, audience string) Auth0Client {
 	return &auth0Client{
-		resty.New(),
 		domain,
 		clientId,
 		clientSecret,
@@ -80,7 +84,15 @@ func (s *auth0Client) obtainApiToken() (string, error) {
 func (s *auth0Client) setUserRole(userId string, role string, apiToken string) error {
 	url := fmt.Sprintf("%sapi/v2/users/%s/roles", s.domain, userId)
 
-	b, _ := json.Marshal(&SetUserRolesRequest{[]string{role}})
+	var roleId string
+
+	if role == "user" {
+		roleId = USER_ROLE_ID
+	} else {
+		roleId = AGENT_ROLE_ID
+	}
+
+	b, _ := json.Marshal(&SetUserRolesRequest{[]string{roleId}})
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(b))
 	req.Header.Set("content-type", "application/json")
@@ -91,6 +103,11 @@ func (s *auth0Client) setUserRole(userId string, role string, apiToken string) e
 		return err
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode != 204 {
+		return errors.New("failed to assign role to user")
+	}
+
 	return nil
 }
 
@@ -103,7 +120,7 @@ func (s *auth0Client) RegisterUserOnAuth0(email string, password string, role st
 
 	url := fmt.Sprintf("%sapi/v2/users", s.domain)
 
-	b, _ := json.Marshal(&UserRegistrationRequest{Email: email, Password: password})
+	b, _ := json.Marshal(&UserRegistrationRequest{Email: email, Password: password, Connection: "nistagram-database"})
 
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(b))
 	req.Header.Set("content-type", "application/json")
@@ -115,13 +132,17 @@ func (s *auth0Client) RegisterUserOnAuth0(email string, password string, role st
 	}
 	defer res.Body.Close()
 
+	if res.StatusCode != 201 {
+		return "", errors.New("failed to create user on auth0")
+	}
+
 	userRegistrationResponse := &UserRegistrationResponse{}
 	json.NewDecoder(res.Body).Decode(userRegistrationResponse)
 
 	userId := userRegistrationResponse.UserId
 
 	if err := s.setUserRole(userId, role, apiToken); err != nil {
-		return "", nil
+		return "", err
 	}
 
 	return userId, nil

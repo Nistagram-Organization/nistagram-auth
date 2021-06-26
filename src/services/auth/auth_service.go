@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"github.com/Nistagram-Organization/agent-shared/src/utils/rest_error"
 	auth02 "github.com/Nistagram-Organization/nistagram-auth/src/clients/auth0"
-	"github.com/Nistagram-Organization/nistagram-auth/src/clients/auth_grpc_client"
+	"github.com/Nistagram-Organization/nistagram-auth/src/clients/user_grpc_client"
 	"github.com/Nistagram-Organization/nistagram-auth/src/dto/registration_request"
+	"github.com/Nistagram-Organization/nistagram-shared/src/utils/rest_error"
 )
 
 type AuthService interface {
@@ -13,13 +13,13 @@ type AuthService interface {
 
 type authService struct {
 	auth0Client    auth02.Auth0Client
-	authGrpcClient auth_grpc_client.AuthGrpcClient
+	userGrpcClient user_grpc_client.UserGrpcClient
 }
 
-func NewAuthService(auth0Client auth02.Auth0Client, authGrpcClient auth_grpc_client.AuthGrpcClient) AuthService {
+func NewAuthService(auth0Client auth02.Auth0Client, userGrpcClient user_grpc_client.UserGrpcClient) AuthService {
 	return &authService{
 		auth0Client,
-		authGrpcClient,
+		userGrpcClient,
 	}
 }
 
@@ -28,11 +28,17 @@ func (s *authService) Register(registrationRequest registration_request.Registra
 		return err
 	}
 
-	if err := s.authGrpcClient.Register(registrationRequest); err != nil {
-		return rest_error.NewInternalServerError("auth grpc client error", err)
+	var id *uint
+	var err error
+
+	if id, err = s.userGrpcClient.CreateUser(registrationRequest); err != nil {
+		return rest_error.NewInternalServerError("user grpc client error when creating user", err)
 	}
 
 	if _, err := s.auth0Client.RegisterUserOnAuth0(registrationRequest.Email, registrationRequest.Password, registrationRequest.Role); err != nil {
+		if err = s.userGrpcClient.DeleteUser(id, registrationRequest.Role); err != nil {
+			return rest_error.NewInternalServerError("user grpc client error when deleting user", err)
+		}
 		return rest_error.NewInternalServerError("auth0 client error", err)
 	}
 

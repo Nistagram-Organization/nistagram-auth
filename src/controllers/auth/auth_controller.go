@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"github.com/Nistagram-Organization/agent-shared/src/utils/rest_error"
 	"github.com/Nistagram-Organization/nistagram-auth/src/dto/registration_request"
 	"github.com/Nistagram-Organization/nistagram-auth/src/services/auth"
+	"github.com/Nistagram-Organization/nistagram-shared/src/utils/rest_error"
 	"github.com/gin-gonic/gin"
 	"net/http"
 )
