@@ -31,10 +31,11 @@ func (c *authController) Register(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.authService.Register(registrationRequest); err != nil {
+	id, err := c.authService.Register(registrationRequest)
+	if err != nil {
 		ctx.JSON(err.Status(), err)
 		return
 	}
 
-	ctx.Status(http.StatusCreated)
+	ctx.JSON(http.StatusCreated, id)
 }
