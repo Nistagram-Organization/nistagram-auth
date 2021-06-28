@@ -1,7 +1,6 @@
 package application
 
 import (
-	"fmt"
 	auth02 "github.com/Nistagram-Organization/nistagram-auth/src/clients/auth0"
 	"github.com/Nistagram-Organization/nistagram-auth/src/clients/user_grpc_client"
 	"github.com/Nistagram-Organization/nistagram-auth/src/controllers/auth"
@@ -46,9 +45,5 @@ func StartApplication() {
 
 	router.POST("/register", authController.Register)
 
-	if port, exists := os.LookupEnv("PORT"); exists {
-		router.Run(fmt.Sprintf(":%s", port))
-	} else {
-		router.Run(":9091")
-	}
+	router.Run(":9091")
 }
