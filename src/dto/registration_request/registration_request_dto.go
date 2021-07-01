@@ -29,11 +29,11 @@ func (r *RegistrationRequest) Validate() rest_error.RestErr {
 	if len(strings.TrimSpace(r.Password)) < 8 {
 		return rest_error.NewBadRequestError("Password must be at least 8 characters long")
 	}
-	if strings.TrimSpace(r.Name) == "" {
-		return rest_error.NewBadRequestError("Name cannot be empty")
+	if strings.TrimSpace(r.FirstName) == "" {
+		return rest_error.NewBadRequestError("First name cannot be empty")
 	}
-	if strings.TrimSpace(r.Surname) == "" {
-		return rest_error.NewBadRequestError("Surname cannot be empty")
+	if strings.TrimSpace(r.LastName) == "" {
+		return rest_error.NewBadRequestError("Last name cannot be empty")
 	}
 	if strings.TrimSpace(r.Phone) == "" {
 		return rest_error.NewBadRequestError("Phone cannot be empty")
@@ -62,8 +62,8 @@ func (r *RegistrationRequest) ToUserMessage() *proto.UserMessage {
 	registrationMessage := proto.UserMessage{
 		Username:  r.Username,
 		Password:  r.Password,
-		Name:      r.Name,
-		Surname:   r.Surname,
+		Name:      r.FirstName,
+		Surname:   r.LastName,
 		BirthDate: r.BirthDate,
 		Public:    r.Public,
 		Taggable:  r.Taggable,
