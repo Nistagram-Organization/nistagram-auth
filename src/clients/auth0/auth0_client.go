@@ -18,7 +18,9 @@ const (
 type Auth0Client interface {
 	obtainApiToken() (string, error)
 	setUserRole(string, string, string) error
+	getUserIdOnAuth0(email string, apiToken string) (string, error)
 	RegisterUserOnAuth0(email string, password string, role string) (string, error)
+	BlockUserOnAuth0(email string) error
 }
 
 type ApiTokenResponse struct {
@@ -37,6 +39,14 @@ type UserRegistrationResponse struct {
 
 type SetUserRolesRequest struct {
 	Roles []string `json:"roles"`
+}
+
+type GetUserIdResponse struct {
+	UserId string `json:"user_id"`
+}
+
+type BlockUserRequest struct {
+	Blocked bool `json:"blocked"`
 }
 
 type auth0Client struct {
@@ -146,4 +156,67 @@ func (s *auth0Client) RegisterUserOnAuth0(email string, password string, role st
 	}
 
 	return userId, nil
+}
+
+func (s *auth0Client) getUserIdOnAuth0(email string, apiToken string) (string, error) {
+	url := fmt.Sprintf("%sapi/v2/users", s.domain)
+
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
+
+	q := req.URL.Query()
+	q.Add("fields", "user_id")
+	q.Add("q", fmt.Sprintf("email:\"%s\" AND identities.connection:\"nistagram-database\"", email))
+	q.Add("search_engine", "v3")
+
+	req.URL.RawQuery = q.Encode()
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+
+	var userIdResponses []GetUserIdResponse
+	if err := json.NewDecoder(res.Body).Decode(&userIdResponses); err != nil {
+		return "", err
+	}
+
+	userId := userIdResponses[0].UserId
+
+	return userId, nil
+}
+
+func (s *auth0Client) BlockUserOnAuth0(email string) error {
+	apiToken, err := s.obtainApiToken()
+
+	if err != nil {
+		return err
+	}
+
+	userId, err := s.getUserIdOnAuth0(email, apiToken)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%sapi/v2/users/%s", s.domain, userId)
+
+	b, _ := json.Marshal(&BlockUserRequest{Blocked: true})
+
+	req, _ := http.NewRequest("PATCH", url, bytes.NewBuffer(b))
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiToken))
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		return errors.New("failed to block user")
+	}
+
+	return nil
 }
