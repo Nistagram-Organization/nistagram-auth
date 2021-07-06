@@ -8,6 +8,7 @@ import (
 	auth2 "github.com/Nistagram-Organization/nistagram-auth/src/services/auth"
 	"github.com/Nistagram-Organization/nistagram-auth/src/services/auth_grpc_service"
 	"github.com/Nistagram-Organization/nistagram-shared/src/proto"
+	"github.com/Nistagram-Organization/nistagram-shared/src/utils/prometheus_handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/soheilhy/cmux"
@@ -69,6 +70,8 @@ func StartApplication() {
 	)
 
 	router.POST("/register", authController.Register)
+
+	router.GET("/metrics", prometheus_handler.PrometheusGinHandler())
 
 	httpS := &http.Server{
 		Handler: router,
