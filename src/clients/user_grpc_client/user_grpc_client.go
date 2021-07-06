@@ -18,14 +18,23 @@ type UserGrpcClient interface {
 }
 
 type userGrpcClient struct {
+	address string
 }
 
-func NewUserGrpcClient() UserGrpcClient {
-	return &userGrpcClient{}
+func NewUserGrpcClient(docker bool) UserGrpcClient {
+	var address string
+	if docker {
+		address = "nistagram-users:8084"
+	} else {
+		address = "127.0.0.1:8084"
+	}
+	return &userGrpcClient{
+		address: address,
+	}
 }
 
 func (c *userGrpcClient) CreateUser(user registration_request.RegistrationRequest) (*uint, error) {
-	conn, err := grpc.Dial("127.0.0.1:8084", grpc.WithInsecure())
+	conn, err := grpc.Dial(c.address, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +63,7 @@ func (c *userGrpcClient) CreateUser(user registration_request.RegistrationReques
 }
 
 func (c *userGrpcClient) DeleteUser(id *uint, role string) error {
-	conn, err := grpc.Dial("127.0.0.1:8084", grpc.WithInsecure())
+	conn, err := grpc.Dial(c.address, grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
