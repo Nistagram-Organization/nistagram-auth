@@ -27,6 +27,7 @@ const (
 	clientIdKey     = "client_id"
 	clientSecretKey = "client_secret"
 	audienceKey     = "audience"
+	dockerKey       = "docker"
 )
 
 func StartApplication() {
@@ -39,6 +40,12 @@ func StartApplication() {
 	clientId := os.Getenv(clientIdKey)
 	clientSecret := os.Getenv(clientSecretKey)
 	audience := os.Getenv(audienceKey)
+	var docker bool
+	if os.Getenv(dockerKey) == "" {
+		docker = false
+	} else {
+		docker = true
+	}
 
 	if domain == "" || clientId == "" || clientSecret == "" || audience == "" {
 		panic("Environment variables not set properly")
@@ -56,7 +63,7 @@ func StartApplication() {
 	httpListener := m.Match(cmux.HTTP1Fast())
 
 	auth0Client := auth02.NewAuth0Client(domain, clientId, clientSecret, audience)
-	userGrpcClient := user_grpc_client.NewUserGrpcClient()
+	userGrpcClient := user_grpc_client.NewUserGrpcClient(docker)
 	authService := auth2.NewAuthService(
 		auth0Client,
 		userGrpcClient,
